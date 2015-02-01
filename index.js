@@ -46,11 +46,12 @@ Ix.prototype.add = function (fn) {
             var row = rows.shift();
             fn(row, function (err, indexes) {
                 if (err) return cb(err);
-                if (!indexes) next();
+                if (!indexes) return next();
                 if (typeof indexes !== 'object') {
                     return cb(new Error('object expected for the indexes'));
                 }
                 var batch = Object.keys(indexes).map(onmap);
+                if (batch.length === 0) return next();
                 self.rdb.batch(batch, next);
                 
                 function onmap (key) {
