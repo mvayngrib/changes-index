@@ -80,6 +80,7 @@ Ix.prototype.exists = function (name, key, cb) {
 
 Ix.prototype.createReadStream = function (name, opts) {
     var self = this;
+    if (!opts) opts = {};
     var nopts = wrap(opts || {}, {
         gt: function (x) {
             return [ name, defined(x, null), opts.gte ? null : undefined ];
