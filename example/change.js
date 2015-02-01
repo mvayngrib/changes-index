@@ -42,6 +42,11 @@ if (argv._[0] === 'create') {
         });
     });
 }
+else if (argv._[0] === 'clear') {
+    indexes.clear(argv._[1], function (err) {
+        if (err) console.error(err);
+    });
+}
 else if (argv._[0] === 'by-name') {
     indexes.createReadStream('user.name', argv)
         .on('data', console.log)

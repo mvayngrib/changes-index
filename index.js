@@ -103,18 +103,21 @@ Ix.prototype.createReadStream = function (name, opts) {
 };
 
 Ix.prototype.clear = function (name, cb) {
+    var self = this;
     var ops = [];
-    var pending = 2;
+    if (!cb) cb = function () {};
     
-    this.rdb.createReadStream().pipe(through.obj(write, end));
-    this.cdb.createReadStream().pipe(through.obj(write, end));
+    self.rdb.createReadStream({
+        gt: [ name, null ],
+        lt: [ name, undefined ]
+    }).pipe(through.obj(write, end));
     
     function write (row, enc, next) {
-        ops.push(row.key);
+        ops.push({ type: 'del', key: row.key });
         next();
     }
     function end () {
-        if (-- pending === 0) db.batch(ops, cb);
+        self.rdb.db.batch(ops, cb);
     }
 };
 
