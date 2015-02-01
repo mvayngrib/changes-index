@@ -82,10 +82,10 @@ Ix.prototype.createReadStream = function (name, opts) {
     var self = this;
     var nopts = wrap(opts || {}, {
         gt: function (x) {
-            return [ name, defined(x, null), undefined ];
+            return [ name, defined(x, null), opts.gte ? null : undefined ];
         },
         lt: function (x) {
-            return [ name, x, null ];
+            return [ name, x, opts.lte ? undefined : null ];
         }
     });
     return this.rdb.createReadStream(nopts)
