@@ -57,7 +57,7 @@ Ix.prototype.add = function (fn) {
                 function onmap (key) {
                     return {
                         type: row.type,
-                        key: [ key, indexes[key], row.key ],
+                        key: [ key, indexes[key], row.rawKey.toString('hex') ],
                         value: '0'
                     };
                 }
@@ -95,7 +95,7 @@ Ix.prototype.createReadStream = function (name, opts) {
     ;
     function write (row, enc, next) {
         var tr = this;
-        var key = row.key[row.key.length-1]
+        var key = Buffer(row.key[row.key.length-1], 'hex');
         self.chdb.get(key, function (err, value) {
             if (err) return next(err);
             tr.push({ key: key, value: value, index: row.key[1] });
@@ -136,7 +136,9 @@ Ix.prototype._decode = function (x) {
         return {
             type: b.type,
             key: unbuf(codec.decodeKey(b.key, options)),
-            value: codec.decodeValue(b.value, options)
+            rawKey: b.key,
+            value: codec.decodeValue(b.value, options),
+            rawValue: b.value
         };
     });
     
