@@ -3,6 +3,8 @@ var sublevel = require('subleveldown');
 var isarray = require('isarray');
 var inherits = require('inherits');
 var EventEmitter = require('events').EventEmitter;
+var changesdown = require('changesdown');
+var xtend = require('xtend');
 
 module.exports = Ix;
 inherits(Ix, EventEmitter);
@@ -27,7 +29,7 @@ Ix.prototype.add = function (name, fn) {
     });
     
     function worker (ch, cb) {
-        fn(ch, function (err, rows) {
+        fn(self._decode(ch.value), function (err, rows) {
             if (err) return cb(err);
             if (!rows || rows.length === 0) return cb();
             if (!isarray(rows)) rows = [ rows ];
@@ -62,3 +64,26 @@ Ix.prototype._getName = function (name) {
     }
     return this.names[name];
 };
+
+Ix.prototype._decode = function (x) {
+    var d = changesdown.decode(x);
+    var batch = d.type === 'batch' ? d.batch : [ d ];
+    var codec = xtend({
+        decodeKey: function (x) { return x },
+        decodeValue: function (x) { return x }
+    }, this.db._codec);
+    var options = this.db.options;
+    
+    return batch.map(function (b) {
+        return {
+            type: b.type,
+            key: unbuf(codec.decodeKey(b.key, options)),
+            value: codec.decodeValue(b.value, options)
+        };
+    });
+};
+
+function unbuf (buf) {
+    if (Buffer.isBuffer(buf)) return buf.toString('utf8');
+    return buf;
+}
