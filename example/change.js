@@ -1,10 +1,9 @@
 var level = require('level');
 var sublevel = require('subleveldown');
+var through = require('through2');
 var changes = require('changes-feed');
 var changesdown = require('changesdown');
-var isarray = require('isarray');
-var crypto = require('crypto');
-var Ix = require('../');
+var chindexer = require('../');
 
 var minimist = require('minimist');
 var argv = minimist(process.argv.slice(2));
@@ -13,7 +12,7 @@ var up = level('/tmp/test.db', { valueEncoding: 'json' });
 var feed = changes(sublevel(up, 'feed'));
 var db = changesdown(sublevel(up, 'db'), feed, { valueEncoding: 'json' });
 
-var indexes = Ix({
+var indexes = chindexer({
     ixdb: level('/tmp/index.db', { valueEncoding: 'json' }),
     chdb: db,
     feed: feed
@@ -29,11 +28,11 @@ indexes.add(function (row, cb) {
 });
 
 if (argv._[0] === 'create') {
-    var id = crypto.randomBytes(16).toString('hex');
+    var id = require('crypto').randomBytes(16).toString('hex');
     var name = argv._[1], space = argv._[2];
     var value = { name: name, hackerspace: space };
     
-    indexes.exists('user.name', name, function (err, ex) {
+    userExists(name, function (err, ex) {
         if (err) return console.error(err);
         if (ex) return console.error('name in use');
         
@@ -56,4 +55,12 @@ else if (argv._[0] === 'by-space') {
     indexes.createReadStream('user.space', argv)
         .on('data', console.log)
     ;
+}
+
+function userExists (name, cb) {
+    indexes.createReadStream('user.name', name, { gte: name, lte: name })
+        .pipe(through.obj(write, end))
+    ;
+    function write (row, enc, next) { cb(null, true) }
+    function end () { cb(null, false) }
 }
