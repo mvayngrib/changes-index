@@ -1,0 +1,34 @@
+{
+  "name": "changes-index",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "bytewise": "~0.7.1",
+    "changesdown": "^2.2.1",
+    "defined": "~0.0.0",
+    "inherits": "^2.0.1",
+    "isarray": "~0.0.1",
+    "level-change-processor": "^1.0.0",
+    "level-option-wrap": "^1.1.0",
+    "subleveldown": "^1.1.0",
+    "through2": "~0.6.3"
+  },
+  "devDependencies": {
+    "changes-feed": "^1.0.0",
+    "level": "^0.18.0",
+    "minimist": "^1.1.0",
+    "tape": "^3.5.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "level",
+    "changes",
+    "changes feed",
+    "indexing",
+    "materialized view"
+  ],
+  "author": "substack",
+  "license": "MIT"
+}
