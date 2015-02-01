@@ -9,20 +9,20 @@ var Ix = require('../');
 var minimist = require('minimist');
 var argv = minimist(process.argv.slice(2));
 
-var up = level('test.db', { valueEncoding: 'json' });
+var up = level('/tmp/test.db', { valueEncoding: 'json' });
 var feed = changes(sublevel(up, 'feed'));
 var db = changesdown(sublevel(up, 'db'), feed, { valueEncoding: 'json' });
 
 var indexes = Ix({
-    ixdb: level('index.db', { valueEncoding: 'json' }),
+    ixdb: level('/tmp/index.db', { valueEncoding: 'json' }),
     chdb: db,
     feed: feed
 });
-indexes.add('user', function (row, cb) {
+indexes.add(function (row, cb) {
     if (/^user!/.test(row.key)) {
         cb(null, {
-            name: row.value.name,
-            space: row.value.hackerspace
+            'user.name': row.value.name,
+            'user.space': row.value.hackerspace
         });
     }
     else cb()

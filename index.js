@@ -18,16 +18,21 @@ function Ix (opts) {
     if (!opts) opts = {};
     this.ixdb = opts.ixdb;
     this.chdb = opts.chdb;
+    
+    this.rdb = sublevel(this.ixdb, 'r', { keyEncoding: bytewise });
+    this.cdb = sublevel(this.ixdb, 'c');
+    
     this.feed = opts.feed;
     this.names = {};
 }
 
-Ix.prototype.add = function (name, fn) {
+Ix.prototype.add = function (fn) {
     var self = this;
-    var rdb = this._getName(name).result;
-    var cdb = this._getName(name).change;
-    var proc = chproc({ db: cdb, feed: this.feed, worker: worker });
-    this.names[name] = { change: cdb, result: rdb };
+    var proc = chproc({
+        db: self.cdb,
+        feed: self.feed,
+        worker: worker
+    });
     
     proc.on('error', function (err) {
         self.emit('error', err);
@@ -46,12 +51,12 @@ Ix.prototype.add = function (name, fn) {
                     return cb(new Error('object expected for the indexes'));
                 }
                 var batch = Object.keys(indexes).map(onmap);
-                rdb.batch(batch, next);
+                self.rdb.batch(batch, next);
                 
                 function onmap (key) {
                     return {
                         type: row.type,
-                        key: [ name, key, indexes[key], row.key ],
+                        key: [ key, indexes[key], row.key ],
                         value: '0'
                     };
                 }
@@ -60,15 +65,12 @@ Ix.prototype.add = function (name, fn) {
     }
 };
 
-Ix.prototype.exists = function (xname, key, cb) {
-    if (typeof xname === 'string') xname = xname.split('.');
-    var name = xname[0], iname = xname[1];
-    var ndb = this._getName(name);
+Ix.prototype.exists = function (name, key, cb) {
     var opts = {
-        gte: [ name, iname, key, null ],
-        lte: [ name, iname, key, undefined ]
+        gte: [ name, key, null ],
+        lte: [ name, key, undefined ]
     };
-    var r = ndb.result.createReadStream(opts);
+    var r = this.rdb.createReadStream(opts);
     r.once('error', function (err) { cb(err) });
     r.pipe(through.obj(write, end));
     
@@ -76,21 +78,17 @@ Ix.prototype.exists = function (xname, key, cb) {
     function end () { cb(null, false) }
 };
 
-Ix.prototype.createReadStream = function (xname, opts) {
+Ix.prototype.createReadStream = function (name, opts) {
     var self = this;
-    if (typeof xname === 'string') xname = xname.split('.');
-    var name = xname[0], iname = xname[1];
-    var ndb = this._getName(name);
-    
     var nopts = wrap(opts || {}, {
         gt: function (x) {
-            return [ name, iname, defined(x, null), undefined ];
+            return [ name, defined(x, null), undefined ];
         },
         lt: function (x) {
-            return [ name, iname, x, null ];
+            return [ name, x, null ];
         }
     });
-    return ndb.result.createReadStream(nopts)
+    return this.rdb.createReadStream(nopts)
         .pipe(through.obj(write))
     ;
     function write (row, enc, next) {
@@ -98,20 +96,18 @@ Ix.prototype.createReadStream = function (xname, opts) {
         var key = row.key[row.key.length-1]
         self.chdb.get(key, function (err, value) {
             if (err) return next(err);
-            tr.push({ key: key, value: value, index: row.key[2] });
+            tr.push({ key: key, value: value, index: row.key[1] });
             next();
         });
     }
 };
 
 Ix.prototype.clear = function (name, cb) {
-    var rdb = this._getName(name).result;
-    var cdb = this._getName(name).change;
     var ops = [];
     var pending = 2;
     
-    rdb.createReadStream().pipe(through.obj(write, end));
-    cdb.createReadStream().pipe(through.obj(write, end));
+    this.rdb.createReadStream().pipe(through.obj(write, end));
+    this.cdb.createReadStream().pipe(through.obj(write, end));
     
     function write (row, enc, next) {
         ops.push(row.key);
@@ -120,15 +116,6 @@ Ix.prototype.clear = function (name, cb) {
     function end () {
         if (-- pending === 0) db.batch(ops, cb);
     }
-};
-
-Ix.prototype._getName = function (name) {
-    if (!this.names[name]) {
-        var rdb = sublevel(this.ixdb, 'r!' + name, { keyEncoding: bytewise });
-        var cdb = sublevel(this.ixdb, 'c!' + name);
-        this.names[name] = { result: rdb, change: cdb };
-    }
-    return this.names[name];
 };
 
 Ix.prototype._decode = function (x) {
