@@ -90,6 +90,7 @@ Ix.prototype.createReadStream = function (name, opts) {
             return [ name, x, opts.lte ? undefined : null ];
         }
     });
+    var decodeKey = decoder(self.ixdb.options.keyEncoding);
     return this.rdb.createReadStream(nopts)
         .pipe(through.obj(write))
     ;
@@ -98,7 +99,11 @@ Ix.prototype.createReadStream = function (name, opts) {
         var key = Buffer(row.key[row.key.length-1], 'hex');
         self.chdb.get(key, function (err, value) {
             if (err) return next(err);
-            tr.push({ key: key, value: value, index: row.key[1] });
+            tr.push({
+                key: decodeKey(key),
+                value: value,
+                index: row.key[1]
+            });
             next();
         });
     }
