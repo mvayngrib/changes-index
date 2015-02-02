@@ -139,6 +139,14 @@ This read stream can be bounded by all the usual levelup options:
 
 Delete the index for `name`, calling `cb(err)` when finished.
 
+# versioning
+
+The internals of this module may change between patch releases, which may affect
+how data is stored on disk.
+
+When you upgrade this package over existing data, you should delete the indexes
+first.
+
 # license
 
 MIT
