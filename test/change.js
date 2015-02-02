@@ -6,14 +6,18 @@ var changesdown = require('changesdown');
 var chindexer = require('../');
 var test = require('tape');
 
+function name (x) {
+    return x + Math.floor(Math.pow(16,8)*Math.random()).toString(16);
+}
+
 test('basic indexing', function (t) {
     t.plan(9);
-    var up = level('main.db', { valueEncoding: 'json' });
+    var up = level(name('main.db'), { valueEncoding: 'json' });
     var feed = changes(sublevel(up, 'feed'));
     var db = changesdown(sublevel(up, 'db'), feed, { valueEncoding: 'json' });
     
     var indexes = chindexer({
-        ixdb: level('index.db', { valueEncoding: 'json' }),
+        ixdb: level(name('index.db'), { valueEncoding: 'json' }),
         chdb: db,
         feed: feed
     });
