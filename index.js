@@ -19,7 +19,10 @@ function Ix (opts) {
     this.ixdb = opts.ixdb;
     this.chdb = opts.chdb;
     
-    this.rdb = sublevel(this.ixdb, 'r', { keyEncoding: bytewise });
+    this.rdb = sublevel(this.ixdb, 'r', {
+        keyEncoding: bytewise,
+        valueEncoding: 'json'
+    });
     this.cdb = sublevel(this.ixdb, 'c');
     
     this.feed = opts.feed;
@@ -31,38 +34,58 @@ Ix.prototype.add = function (fn) {
     var proc = chproc({
         db: self.cdb,
         feed: self.feed,
-        worker: worker
+        worker: function (ch, cb) {
+            self._worker(fn, ch, cb);
+        }
     });
-    
     proc.on('error', function (err) {
         self.emit('error', err);
     });
+};
+
+Ix.prototype._worker = function (fn, ch, cb) {
+    var self = this;
+    var rows = self._decode(ch.value);
+    next();
     
-    function worker (ch, cb) {
-        var rows = self._decode(ch.value);
-        (function next (err) {
+    function next (err) {
+        if (err) return cb(err);
+        if (rows.length === 0) return cb();
+        var row = rows.shift();
+        fn(row, function (err, indexes) {
             if (err) return cb(err);
-            if (rows.length === 0) return cb();
-            var row = rows.shift();
-            fn(row, function (err, indexes) {
-                if (err) return cb(err);
-                if (!indexes) return next();
-                if (typeof indexes !== 'object') {
-                    return cb(new Error('object expected for the indexes'));
-                }
-                var batch = Object.keys(indexes).map(onmap);
-                if (batch.length === 0) return next();
-                self.rdb.batch(batch, next);
-                
-                function onmap (key) {
-                    return {
-                        type: row.type,
-                        key: [ key, indexes[key], row.rawKey ],
-                        value: '0'
-                    };
-                }
+            if (!indexes) return next();
+            if (typeof indexes !== 'object') {
+                return cb(new Error('object expected for the indexes'));
+            }
+            onrow(row, indexes);
+        });
+    }
+    function onrow (row, indexes) {
+        var batch = Object.keys(indexes).map(map);
+        var keys = batch.map(function (b) {
+            return b.key.slice(0, 2);
+        });
+        
+        if (batch.length > 0) {
+            /*
+            batch.push({
+                type: row.type,
+                key: [ null, row.rawKey ],
+                value: keys
             });
-        })();
+            */
+            self.rdb.batch(batch, next);
+        }
+        else next()
+        
+        function map (key) {
+            return {
+                type: row.type,
+                key: [ key, indexes[key], row.rawKey ],
+                value: 0
+            };
+        }
     }
 };
 
