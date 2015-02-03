@@ -10,7 +10,7 @@ function name (x) {
     return x + Math.floor(Math.pow(16,8)*Math.random()).toString(16);
 }
 
-test('basic indexing', function (t) {
+test('update existing indexes', function (t) {
     t.plan(4);
     var up = level(name('main.db'), { valueEncoding: 'json' });
     var feed = changes(sublevel(up, 'feed'));
@@ -52,10 +52,10 @@ test('basic indexing', function (t) {
             key: 'ignore!me',
             value: {}
         }
-    ], ready);
+    ], function (err) { t.ifError(err) });
+    indexes.once('change', ready);
     
-    function ready (err) {
-        t.ifError(err);
+    function ready () {
         indexes.createReadStream('user.name')
         .pipe(collect(function (rows) {
             t.deepEqual(rows, [

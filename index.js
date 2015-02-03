@@ -50,7 +50,10 @@ Ix.prototype._worker = function (fn, ch, cb) {
     
     function next (err) {
         if (err) return cb(err);
-        if (rows.length === 0) return cb();
+        if (rows.length === 0) {
+            self.emit('change', ch);
+            return cb();
+        }
         var row = rows.shift();
         fn(row, function (err, indexes) {
             if (err) return cb(err);
@@ -58,24 +61,38 @@ Ix.prototype._worker = function (fn, ch, cb) {
             if (typeof indexes !== 'object') {
                 return cb(new Error('object expected for the indexes'));
             }
-            onrow(row, indexes);
+            self.rdb.get([ null, row.rawKey ], function (err, keys) {
+                if (!keys) onrow(row, indexes, [])
+                else onrow(row, indexes, keys)
+            });
         });
     }
-    function onrow (row, indexes) {
-        var batch = Object.keys(indexes).map(map);
+    function onrow (row, indexes, prev) {
+        var delbatch = prev.map(function (key) {
+            return {
+                type: 'del',
+                key: key.concat(row.rawKey)
+            };
+        });
+        var delbatch = [];
+        var batch = row.type === 'put'
+            ? Object.keys(indexes).map(map)
+            : []
+        ;
         var keys = batch.map(function (b) {
             return b.key.slice(0, 2);
         });
         
         if (batch.length > 0) {
-            /*
             batch.push({
                 type: row.type,
                 key: [ null, row.rawKey ],
                 value: keys
             });
-            */
-            self.rdb.batch(batch, next);
+            self.rdb.batch(delbatch.concat(batch), next);
+        }
+        else if (delbatch.length > 0) {
+            self.rdb.batch(delbatch, next);
         }
         else next()
         
