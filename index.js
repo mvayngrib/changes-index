@@ -14,6 +14,7 @@ module.exports = Ix;
 inherits(Ix, EventEmitter);
 
 function Ix (opts) {
+    var self = this;
     if (!(this instanceof Ix)) return new Ix(opts);
     EventEmitter.call(this);
     if (!opts) opts = {};
@@ -29,6 +30,12 @@ function Ix (opts) {
     this.feed = opts.feed;
     this.names = {};
     this._lastChange = -1;
+    
+    this.cdb.get('latest', function (err, value) {
+        if (value === undefined) value = '0';
+        self._latestChange = parseInt(value);
+        self.emit('latest', self._latestChange);
+    });
 }
 
 Ix.prototype.add = function (fn) {
@@ -54,6 +61,7 @@ Ix.prototype._worker = function (fn, ch, cb) {
         if (err) return cb(err);
         if (rows.length === 0) {
             self._lastChange = ch.change;
+            self.emit('latest', ch.change);
             self.emit('change', ch);
             return cb();
         }
@@ -138,9 +146,9 @@ Ix.prototype.createReadStream = function (name, opts) {
     
     var feedch = self.feed.change;
     if (self._lastChange < feedch) {
-        self.on('change', function f (ch) {
-            if (self._lastChange >= feedch) {
-                self.removeListener('change', f);
+        self.on('latest', function f (ch) {
+            if (ch >= feedch) {
+                self.removeListener('latest', f);
                 self.rdb.createReadStream(nopts).pipe(r);
             }
         });
