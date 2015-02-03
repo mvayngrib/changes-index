@@ -74,7 +74,6 @@ Ix.prototype._worker = function (fn, ch, cb) {
                 key: key.concat(row.rawKey)
             };
         });
-        var delbatch = [];
         var batch = row.type === 'put'
             ? Object.keys(indexes).map(map)
             : []

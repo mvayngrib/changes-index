@@ -31,6 +31,7 @@ test('update existing indexes', function (t) {
         else cb()
     });
     
+    indexes.once('change', ready);
     db.batch([
         {
             type: 'put',
@@ -53,7 +54,6 @@ test('update existing indexes', function (t) {
             value: {}
         }
     ], function (err) { t.ifError(err) });
-    indexes.once('change', ready);
     
     function ready () {
         indexes.createReadStream('user.name')
@@ -76,15 +76,15 @@ test('update existing indexes', function (t) {
                 }
             ], 'user.name all');
             
+            indexes.once('change', checkNameUpdate);
             db.put('user!1',
                 { name: 'scubastack', hackerspace: 'sudoroom' },
-                checkNameUpdate
+                function (err) { t.ifError(err) }
             );
         }));
     }
     
-    function checkNameUpdate (err) {
-        t.ifError(err);
+    function checkNameUpdate () {
         indexes.createReadStream('user.name')
         .pipe(collect(function (rows) {
             t.deepEqual(rows, [
