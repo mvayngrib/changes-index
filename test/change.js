@@ -3,7 +3,7 @@ var sublevel = require('subleveldown');
 var through = require('through2');
 var changes = require('changes-feed');
 var changesdown = require('changesdown');
-var chindexer = require('../');
+var chi = require('../');
 var test = require('tape');
 
 function name (x) {
@@ -16,7 +16,7 @@ test('basic indexing', function (t) {
     var feed = changes(sublevel(up, 'feed'));
     var db = changesdown(sublevel(up, 'db'), feed, { valueEncoding: 'json' });
     
-    var indexes = chindexer({
+    var indexes = chi({
         ixdb: level(name('index.db'), { valueEncoding: 'json' }),
         chdb: db,
         feed: feed

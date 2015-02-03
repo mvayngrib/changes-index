@@ -18,7 +18,7 @@ var level = require('level');
 var sublevel = require('subleveldown');
 var changes = require('changes-feed');
 var changesdown = require('changesdown');
-var chindexer = require('../');
+var chi = require('../');
 
 var argv = require('minimist')(process.argv.slice(2));
 
@@ -26,7 +26,7 @@ var up = level('/tmp/test.db', { valueEncoding: 'json' });
 var feed = changes(sublevel(up, 'feed'));
 var db = changesdown(sublevel(up, 'db'), feed, { valueEncoding: 'json' });
 
-var indexes = chindexer({
+var indexes = chi({
     ixdb: level('/tmp/index.db', { valueEncoding: 'json' }),
     chdb: db,
     feed: feed
@@ -97,10 +97,10 @@ else if (argv._[0] === 'by-space') {
 # methods
 
 ``` js
-var chindexer = require('changes-index')
+var chi = require('changes-index')
 ```
 
-# var indexes = chindexer(opts)
+# var indexes = chi(opts)
 
 You must provide:
 
