@@ -116,19 +116,6 @@ Ix.prototype._worker = function (fn, ch, cb) {
     }
 };
 
-Ix.prototype.exists = function (name, key, cb) {
-    var opts = {
-        gte: [ name, key, null ],
-        lte: [ name, key, undefined ]
-    };
-    var r = this.rdb.createReadStream(opts);
-    r.once('error', function (err) { cb(err) });
-    r.pipe(through.obj(write, end));
-    
-    function write (row, enc, next) { cb(null, true) }
-    function end () { cb(null, false) }
-};
-
 Ix.prototype.createReadStream = function (name, opts) {
     var self = this;
     if (!opts) opts = {};
