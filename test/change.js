@@ -52,11 +52,10 @@ test('basic indexing', function (t) {
             key: 'ignore!me',
             value: {}
         }
-    ], function (err) { t.ifError(err) });
+    ], ready);
     
-    indexes.once('change', ready);
-    
-    function ready () {
+    function ready (err) {
+        t.ifError(err);
         indexes.createReadStream('user.name')
         .pipe(collect(function (rows) {
             t.deepEqual(rows, [
