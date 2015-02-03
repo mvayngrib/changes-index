@@ -6,6 +6,7 @@ var EventEmitter = require('events').EventEmitter;
 var changesdown = require('changesdown');
 var defined = require('defined');
 var through = require('through2');
+var readonly = require('read-only-stream');
 var bytewise = require('bytewise');
 var wrap = require('level-option-wrap');
 
@@ -27,6 +28,7 @@ function Ix (opts) {
     
     this.feed = opts.feed;
     this.names = {};
+    this._lastChange = -1;
 }
 
 Ix.prototype.add = function (fn) {
@@ -51,6 +53,7 @@ Ix.prototype._worker = function (fn, ch, cb) {
     function next (err) {
         if (err) return cb(err);
         if (rows.length === 0) {
+            self._lastChange = ch.change;
             self.emit('change', ch);
             return cb();
         }
@@ -121,6 +124,7 @@ Ix.prototype.exists = function (name, key, cb) {
 Ix.prototype.createReadStream = function (name, opts) {
     var self = this;
     if (!opts) opts = {};
+    
     var nopts = wrap(opts || {}, {
         gt: function (x) {
             return [ name, defined(x, null), opts.gte ? null : undefined ];
@@ -130,9 +134,22 @@ Ix.prototype.createReadStream = function (name, opts) {
         }
     });
     var decodeKey = decoder(self.ixdb.options.keyEncoding);
-    return this.rdb.createReadStream(nopts)
-        .pipe(through.obj(write))
-    ;
+    var r = through.obj(write);
+    
+    var feedch = self.feed.change;
+    if (self._lastChange < feedch) {
+        self.on('change', function f (ch) {
+            if (self._lastChange >= feedch) {
+                self.removeListener('change', f);
+                self.rdb.createReadStream(nopts).pipe(r);
+            }
+        });
+    }
+    else {
+        self.rdb.createReadStream(nopts).pipe(r);
+    }
+    return readonly(r);
+    
     function write (row, enc, next) {
         var tr = this;
         var key = row.key[row.key.length-1];
