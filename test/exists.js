@@ -30,9 +30,15 @@ test('exists', function (t) {
         feed: feed
     });
     
-    var counts = {};
+    var count = 0;
     indexes.add(function (row, cb) {
         t.deepEqual(relevant(row), expected.shift());
+        if (row.type === 'put') {
+            count += row.exists ? 0 : 1;
+        }
+        else if (row.type === 'del') {
+            count -= row.exists ? 1 : 0;
+        }
         cb();
     });
     
@@ -46,7 +52,7 @@ test('exists', function (t) {
     
     function ready (err) {
         t.ifError(err);
-        t.deepEqual(count, { });
+        t.equal(count, 2);
     }
     function relevant (x) {
         return {
