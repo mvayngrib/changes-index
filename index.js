@@ -122,10 +122,16 @@ Ix.prototype.createReadStream = function (name, opts) {
     
     var nopts = wrap(opts || {}, {
         gt: function (x) {
-            return [ name, defined(x, null), opts.gte ? null : undefined ];
+            return [
+                name, defined(x, null),
+                opts.gte !== undefined ? null : undefined
+            ];
         },
         lt: function (x) {
-            return [ name, x, opts.lte ? undefined : null ];
+            return [
+                name, x,
+                opts.lte !== undefined ? undefined : null
+            ];
         }
     });
     var decodeKey = decoder(self.ixdb.options.keyEncoding);
