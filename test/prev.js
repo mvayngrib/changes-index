@@ -24,7 +24,7 @@ test('previous', function (t) {
     indexes.add(function (row, cb) {
         if (/^user!/.test(row.key)) {
             cb(null, {
-                'user.updates': (row.previous && row.previous.updates || 0) + 1,
+                'user.updates': (row.prev && row.prev['user.updates'] || 0) + 1,
                 'user.name': row.value.name,
                 'user.space': row.value.hackerspace
             });
@@ -90,9 +90,9 @@ test('previous', function (t) {
         .pipe(collect(function (rows) {
             t.deepEqual(rows, [
                 {
-                    key: 'user!1',
-                    value: { name: 'scubastack', hackerspace: 'sudoroom' },
-                    index: 2
+                    key: 'user!2',
+                    value: { name: 'mk30', hackerspace: 'sudoroom' },
+                    index: 1
                 },
                 {
                     key: 'user!3',
@@ -100,10 +100,10 @@ test('previous', function (t) {
                     index: 1
                 },
                 {
-                    key: 'user!2',
-                    value: { name: 'mk30', hackerspace: 'sudoroom' },
-                    index: 1
-                }
+                    key: 'user!1',
+                    value: { name: 'scubastack', hackerspace: 'sudoroom' },
+                    index: 2
+                },
             ], 'user.updates');
         }));
     }

@@ -72,9 +72,9 @@ Ix.prototype._worker = function (fn, ch, cb) {
         if (has(bkeys, row.key)) {
             var keys = bkeys[row.key];
             if (row.type === 'del') {
-                bkeys[row.key] = false;
+                bkeys[row.key] = null;
             }
-            if (keys === false) {
+            if (keys === null) {
                 onget({ type: 'NotFoundError' });
             }
             else onget(null, keys);
@@ -83,9 +83,10 @@ Ix.prototype._worker = function (fn, ch, cb) {
         
         function onget (err, keys) {
             row.exists = !(err && err.type === 'NotFoundError');
+            row.prev = keys;
             
-            if (!keys) keys = [];
             bkeys[row.key] = keys;
+            
             fn(row, function (err, indexes) {
                 if (err) return cb(err);
                 if (!indexes) indexes = {};
@@ -98,10 +99,11 @@ Ix.prototype._worker = function (fn, ch, cb) {
         }
     }
     function onrow (row, indexes, prev) {
-        var delbatch = prev.map(function (key) {
+        var pkeys = Object.keys(prev || {});
+        var delbatch = pkeys.map(function (key) {
             return {
                 type: 'del',
-                key: key.concat(row.rawKey)
+                key: [ key, prev[key], row.rawKey ]
             };
         });
         var batch = row.type === 'put'
@@ -116,7 +118,7 @@ Ix.prototype._worker = function (fn, ch, cb) {
             batch.push({
                 type: row.type,
                 key: [ null, row.rawKey ],
-                value: keys
+                value: indexes
             });
             self.rdb.batch(delbatch.concat(batch), next);
         }
