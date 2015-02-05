@@ -136,6 +136,14 @@ This read stream can be bounded by all the usual levelup options:
 * `opts.limit`
 * `opts.reverse`
 
+plus:
+
+* `opts.eq`
+
+which is the same as setting `opts.gte` and `opts.lte` to the same value.
+This isn't common in ordinary levelup but is very common when dealing with
+indexes that map to other keys.
+
 # indexes.clear(name, cb)
 
 Delete the index for `name`, calling `cb(err)` when finished.
