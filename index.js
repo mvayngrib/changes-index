@@ -29,12 +29,12 @@ function Ix (opts) {
     
     this.feed = opts.feed;
     this.names = {};
-    this._lastChange = -1;
+    this._latest = -1;
     
     this.cdb.get('latest', function (err, value) {
         if (value === undefined) value = '0';
-        self._latestChange = parseInt(value);
-        self.emit('latest', self._latestChange);
+        self._latest = parseInt(value);
+        self.emit('latest', self._latest);
     });
 }
 
@@ -60,7 +60,7 @@ Ix.prototype._worker = function (fn, ch, cb) {
     function next (err) {
         if (err) return cb(err);
         if (rows.length === 0) {
-            self._lastChange = ch.change;
+            self._latest = ch.change;
             self.emit('latest', ch.change);
             self.emit('change', ch);
             return cb();
@@ -132,7 +132,7 @@ Ix.prototype.createReadStream = function (name, opts) {
     var r = through.obj(write);
     
     var feedch = self.feed.change;
-    if (self._lastChange < feedch) {
+    if (self._latest < feedch) {
         self.on('latest', function f (ch) {
             if (ch >= feedch) {
                 self.removeListener('latest', f);
