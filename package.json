@@ -14,7 +14,8 @@
     "level-option-wrap": "^1.1.0",
     "read-only-stream": "^1.1.1",
     "subleveldown": "^1.1.0",
-    "through2": "~0.6.3"
+    "through2": "~0.6.3",
+    "xtend": "^4.0.0"
   },
   "devDependencies": {
     "changes-feed": "^1.0.0",

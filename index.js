@@ -138,6 +138,10 @@ Ix.prototype._worker = function (fn, ch, cb) {
 Ix.prototype.createReadStream = function (name, opts) {
     var self = this;
     if (!opts) opts = {};
+    if (opts.eq) {
+        opts.lte = opts.eq;
+        opts.gte = opts.eq;
+    }
     
     var nopts = wrap(opts || {}, {
         gt: function (x) {
