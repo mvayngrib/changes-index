@@ -39,7 +39,7 @@ test('exists', function (t) {
         else if (row.type === 'del') {
             count -= row.exists ? 1 : 0;
         }
-        cb();
+        cb(null, { 'whatever': row.value });
     });
     
     db.batch([
@@ -50,16 +50,19 @@ test('exists', function (t) {
         { type: 'del', key: 'b' }
     ], ready);
     
+    indexes.on('change', function (ch) {
+        if (ch.change === 1) {
+            t.equal(count, 2);
+        }
+    });
+    
     function ready (err) {
         t.ifError(err);
-        t.equal(count, 2);
     }
     function relevant (x) {
-        return {
-            type: x.type,
-            key: x.key,
-            value: x.value,
-            exists: x.exists
-        };
+        if (x.type === 'del') {
+            return { type: x.type, key: x.key, exists: x.exists };
+        }
+        return { type: x.type, key: x.key, value: x.value, exists: x.exists };
     }
 });

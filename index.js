@@ -9,6 +9,7 @@ var through = require('through2');
 var readonly = require('read-only-stream');
 var bytewise = require('bytewise');
 var wrap = require('level-option-wrap');
+var has = require('has');
 
 module.exports = Ix;
 inherits(Ix, EventEmitter);
@@ -54,6 +55,7 @@ Ix.prototype.add = function (fn) {
 
 Ix.prototype._worker = function (fn, ch, cb) {
     var self = this;
+    var bkeys = {};
     var rows = self._decode(ch.value);
     next();
     
@@ -66,17 +68,34 @@ Ix.prototype._worker = function (fn, ch, cb) {
             return cb();
         }
         var row = rows.shift();
-        fn(row, function (err, indexes) {
-            if (err) return cb(err);
-            if (!indexes) return next();
-            if (typeof indexes !== 'object') {
-                return cb(new Error('object expected for the indexes'));
+        
+        if (has(bkeys, row.key)) {
+            var keys = bkeys[row.key];
+            if (row.type === 'del') {
+                bkeys[row.key] = false;
             }
-            self.rdb.get([ null, row.rawKey ], function (err, keys) {
-                if (!keys) onrow(row, indexes, [])
+            if (keys === false) {
+                onget({ type: 'NotFoundError' });
+            }
+            else onget(null, keys);
+        }
+        else self.rdb.get([ null, row.rawKey ], onget);
+        
+        function onget (err, keys) {
+            row.exists = !(err && err.type === 'NotFoundError');
+            
+            if (!keys) keys = [];
+            bkeys[row.key] = keys;
+            fn(row, function (err, indexes) {
+                if (err) return cb(err);
+                if (!indexes) indexes = {};
+                
+                if (typeof indexes !== 'object') {
+                    cb(new Error('object expected for the indexes'));
+                }
                 else onrow(row, indexes, keys)
             });
-        });
+        }
     }
     function onrow (row, indexes, prev) {
         var delbatch = prev.map(function (key) {
