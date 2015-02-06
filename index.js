@@ -84,6 +84,7 @@ Ix.prototype._worker = function (fn, ch, cb) {
         function onget (err, keys) {
             row.exists = !(err && err.type === 'NotFoundError');
             row.prev = keys;
+            row.change = ch.change;
             
             bkeys[row.key] = keys;
             
