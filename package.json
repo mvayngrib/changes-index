@@ -1,6 +1,6 @@
 {
   "name": "changes-index",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "create indexes from a leveldb changes feed",
   "main": "index.js",
   "dependencies": {
