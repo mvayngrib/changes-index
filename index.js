@@ -141,7 +141,7 @@ Ix.prototype._worker = function (fn, ch, cb) {
 Ix.prototype.createReadStream = function (name, opts) {
     var self = this;
     if (!opts) opts = {};
-    if (opts.eq) {
+    if (has(opts, 'eq')) {
         opts.lte = opts.eq;
         opts.gte = opts.eq;
     }
