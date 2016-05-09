@@ -31,11 +31,11 @@ if (argv._[0] === 'create') {
     var id = require('crypto').randomBytes(16).toString('hex');
     var name = argv._[1], space = argv._[2];
     var value = { name: name, hackerspace: space };
-    
+
     userExists(name, function (err, ex) {
         if (err) return console.error(err);
         if (ex) return console.error('name in use');
-        
+
         db.put('user!' + id, value, function (err) {
             if (err) console.error(err);
         });
@@ -58,7 +58,7 @@ else if (argv._[0] === 'by-space') {
 }
 
 function userExists (name, cb) {
-    indexes.createReadStream('user.name', name, { gte: name, lte: name })
+    indexes.createReadStream('user.name', { gte: name, lte: name })
         .pipe(through.obj(write, end))
     ;
     function write (row, enc, next) { cb(null, true) }

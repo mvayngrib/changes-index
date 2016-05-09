@@ -60,7 +60,7 @@ if (argv._[0] === 'create') {
     });
     
     function userExists (name, cb) {
-        indexes.createReadStream('user.name', name, { gte: name, lte: name })
+        indexes.createReadStream('user.name', { gte: name, lte: name })
             .pipe(through.obj(write, end))
         ;
         function write (row, enc, next) { cb(null, true) }
